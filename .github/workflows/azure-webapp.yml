@@ -3,8 +3,9 @@ name: Build and deploy ASP.NET Core app to Azure Web App
 on:
   push:
     branches:
-      - main
+      - master
 
+  
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
