@@ -1,4 +1,6 @@
-﻿namespace UMS.API.GlobalAcceptionHandler
+﻿using System.Text.Json;
+
+namespace UMS.API.GlobalAcceptionHandler
 {
     public class ExceptionHandlingMiddleware
     {
@@ -20,9 +22,31 @@
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unhandled exception occurred.");
-                context.Response.StatusCode = 500;
-                await context.Response.WriteAsJsonAsync(new { error = ex.Message });
+                await HandleExceptionAsync(context, ex);
             }
+        }
+
+        private static Task HandleExceptionAsync(HttpContext context, Exception ex)
+        {
+            var statusCode = ex switch
+            {
+                ArgumentNullException => StatusCodes.Status400BadRequest,  // Bad Request
+                KeyNotFoundException => StatusCodes.Status404NotFound,    // Not Found
+                UnauthorizedAccessException => StatusCodes.Status401Unauthorized,// Unauthorized
+                InvalidOperationException => StatusCodes.Status409Conflict,    // Conflict
+                _ => StatusCodes.Status500InternalServerError // Internal Server Error
+            };
+
+            var problem = new
+            {
+                status = statusCode,
+                title = ex.Message,
+                detail = ex.InnerException?.Message
+            };
+
+            context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsync(JsonSerializer.Serialize(problem));
         }
     }
 }

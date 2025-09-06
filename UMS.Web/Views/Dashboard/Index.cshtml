@@ -1,4 +1,6 @@
-﻿@{
+﻿@model UMS.Web.Models.UserProfileViewModel
+
+@{
     Layout = "_DashboardLayout";   
     ViewData["Title"] = "My Profile";
 }
@@ -6,14 +8,18 @@
 <h2>My Profile</h2>
 
 <div class="card p-3 mt-3 shadow-sm">
-    <p><strong>Email:</strong> @ViewBag.Email</p>
-    <p><strong>Role:</strong> @ViewBag.Role</p>
+    <img src="https://localhost:7240/@Model.ProfileImageUrl" alt="Profile Image"
+         class="img-thumbnail mb-3" style="width: 150px; height: 150px; object-fit: cover;" />
+
+    <p><strong>UserName:</strong> @Model.UserName</p>
+    <p><strong>Email:</strong> @Model.Email</p>
+    <p><strong>Role:</strong> @Model.Roles.FirstOrDefault()</p>
 
     <a href="@Url.Action("EditProfile", "Dashboard")" class="btn btn-primary mt-2">Edit Profile</a>
 </div>
 
 
-<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+<d@* iv class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form id="editUserForm" method="post">
@@ -48,4 +54,4 @@
             </form>
         </div>
     </div>
-</div>
+</div> *@

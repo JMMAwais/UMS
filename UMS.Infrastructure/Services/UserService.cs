@@ -1,5 +1,6 @@
 ﻿using Azure.Core;
 using MediatR;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -22,11 +23,12 @@ namespace UMS.Infrastructure.Repositories
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly IjwtTokenService _jwtTokenService;
-
-        public UserService(UserManager<AppUser> userManager, IjwtTokenService jwtTokenService)
+        private readonly IWebHostEnvironment _env;
+        public UserService(UserManager<AppUser> userManager, IjwtTokenService jwtTokenService,IWebHostEnvironment env)
         {
             _userManager = userManager;
             _jwtTokenService = jwtTokenService;
+            _env = env;
         }
 
         public async Task<List<UserDTO>> GetAllUsersAsync()
@@ -58,7 +60,8 @@ namespace UMS.Infrastructure.Repositories
                 Id= user.Id,
                 Email = user.Email,
                 UserName = user.UserName,
-                Roles = roles
+                Roles = roles,
+                ProfileImageUrl = user.ProfileImageUrl
             };
         }
 
@@ -75,13 +78,34 @@ namespace UMS.Infrastructure.Repositories
 
         public async Task<bool> UpdateUserDetailsAsync(UpdateUserCommand command)
         {
-            var user = await _userManager.FindByIdAsync(command.Id);
+            var user = await _userManager.FindByIdAsync(command.Id.ToString());
             if (user == null)
                 return false;
 
+        
+            var uploadsPath = Path.Combine(_env.WebRootPath, "uploads");
+            if (!Directory.Exists(uploadsPath))
+            {
+                Directory.CreateDirectory(uploadsPath);
+            }
+
+            if (command.File != null && command.File.Length > 0)
+            {
+                var fileName = Guid.NewGuid() + Path.GetExtension(command.File.FileName);
+                var filePath = Path.Combine(uploadsPath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await command.File.CopyToAsync(stream);
+                }
+
+                // Update profile image URL
+                user.ProfileImageUrl = "/uploads/" + fileName;
+            }
+
             user.Email = command.Email;
             user.UserName = command.UserName;
-
+       
             if (!string.IsNullOrWhiteSpace(command.Roles.FirstOrDefault()))
             {
                 var currentRoles = await _userManager.GetRolesAsync(user);

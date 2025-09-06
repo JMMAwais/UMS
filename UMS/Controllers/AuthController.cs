@@ -27,12 +27,12 @@ namespace UMS.API.Controllers
 
             var result = await _mediator.Send(request);
             if (result==null)
-                return StatusCode((int)result.StatusCode, result);
+                return StatusCode(500, new { success = false, message = "Internal Server Error" });
 
             return StatusCode((int)result.StatusCode, result);
         }
 
-        [HttpPost("Login")]
+        [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginCommand request)
         {
             var result = await _mediator.Send(request);

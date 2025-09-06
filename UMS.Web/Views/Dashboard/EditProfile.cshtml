@@ -1,6 +1,4 @@
-﻿
-
-@model UMS.Web.Models.Dashboard.UserProfileViewModel
+﻿@model UMS.Web.Models.UserProfileViewModel
 
 @{
     Layout = "_DashboardLayout";
@@ -9,29 +7,58 @@
 
 <h2 class="mb-4">Edit Profile</h2>
 
-<div class="card shadow-sm p-4 col-md-6">
-    <form asp-action="EditProfile" method="post">
-        <input type="hidden" asp-for="Id" />
+<form asp-action="EditProfile" method="post" enctype="multipart/form-data">
+    <input type="hidden" asp-for="Id" />
 
-        <div class="mb-3">
-            <label asp-for="UserName" class="form-label"></label>
-            <input asp-for="UserName" class="form-control" />
-            <span asp-validation-for="UserName" class="text-danger"></span>
-        </div>
+    <!-- Username -->
+    <div class="mb-3">
+        <label asp-for="UserName" class="form-label"></label>
+        <input asp-for="UserName" class="form-control" />
+        <span asp-validation-for="UserName" class="text-danger"></span>
+    </div>
 
-        <div class="mb-3">
-            <label asp-for="Email" class="form-label"></label>
-            <input asp-for="Email" class="form-control" />
-            <span asp-validation-for="Email" class="text-danger"></span>
-        </div>
+    <!-- Email -->
+    <div class="mb-3">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
 
-        <div class="d-flex justify-content-between">
-            <a asp-action="Index" asp-controller="Dashboard" class="btn btn-secondary">Cancel</a>
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-        </div>
-    </form>
-</div>
+    <!-- Profile Picture -->
+    <div class="mb-3">
+        @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+        {
+            <img src="https://localhost:7240/@Model.ProfileImageUrl" width="150" height="150" style="border-radius:50%;" class="mb-3" />
+        }
+        <input asp-for="File" type="file" class="form-control" id="fileInput" />
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <a asp-action="Index" asp-controller="Dashboard" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+    </div>
+</form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    let img = document.querySelector("form img");
+                    if (!img) {
+                        img = document.createElement("img");
+                        img.style.borderRadius = "50%";
+                        img.width = 150;
+                        img.height = 150;
+                        document.querySelector("form").insertBefore(img, document.getElementById('fileInput'));
+                    }
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
 }

@@ -19,34 +19,17 @@ namespace UMS.Web.Controllers
             _httpClient = httpClientFactory.CreateClient("API");
         }
 
-        public IActionResult Index()
+        [Authorize]
+        public async Task<IActionResult> Index()
         {
-            var token = Request.Cookies["token"];
-            if (string.IsNullOrEmpty(token))
-                return RedirectToAction("Login", "Account");
-
-            var handler = new JwtSecurityTokenHandler();
-            JwtSecurityToken jwtToken;
-
-            try
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var apiResponse = await _httpClient.GetAsync($"api/user/{userId}");
+            if (!apiResponse.IsSuccessStatusCode)
             {
-                jwtToken = handler.ReadJwtToken(token);
-            }
-            catch
-            {
-                Response.Cookies.Delete("token");
                 return RedirectToAction("Login", "Account");
             }
-
-            var userId = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
-            var email = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email)?.Value;
-            var role = jwtToken.Claims.FirstOrDefault(c => c.Type.Contains("role"))?.Value;
-
-            ViewBag.UserId = userId;
-            ViewBag.Email = email;
-            ViewBag.Role = role;
-
-            return View();
+            var userProfile = await apiResponse.Content.ReadFromJsonAsync<UserProfileViewModel>();
+            return View(userProfile);
 
         }
 
@@ -89,6 +72,8 @@ namespace UMS.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(UserListViewModel model)
         {
+
+
             if (!ModelState.IsValid)
                 return View(model);
 
@@ -138,24 +123,39 @@ namespace UMS.Web.Controllers
             if (!response.IsSuccessStatusCode)
                 return NotFound();
 
-            var user = await response.Content.ReadFromJsonAsync<UserProfileViewModel>();
+            var user = await response.Content.ReadFromJsonAsync<Models.UserProfileViewModel>();
             return View(user);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditProfile(UserProfileViewModel model)
+        public async Task<IActionResult> EditProfile([FromForm] Models.UserProfileViewModel model)
         {
-            
-            model.Roles = [""];
-            //if (!ModelState.IsValid)
-            //    return View(model);
-            var response = await _httpClient.PutAsJsonAsync($"api/user/{model.Id}", model);
 
+            model.Roles = new[] { "" }; // Agar roles ka default dena hai
+
+            using var content = new MultipartFormDataContent();
+
+            // Add string fields
+            content.Add(new StringContent(model.UserName ?? ""), "UserName");
+            content.Add(new StringContent(model.Email ?? ""), "Email");
+            content.Add(new StringContent(model.Id.ToString()), "Id");
+            content.Add(new StringContent(model.Roles[0].ToString()), "Roles");
+
+            // Add file if present
+            if (model.File != null && model.File.Length > 0)
+            {
+                var fileContent = new StreamContent(model.File.OpenReadStream());
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(model.File.ContentType);
+                content.Add(fileContent, "File", model.File.FileName);
+            }
+
+            var response = await _httpClient.PutAsync($"api/user/{model.Id}", content);
+            Console.WriteLine(response.ToString);
             if (response.IsSuccessStatusCode)
             {
                 TempData["Message"] = "Profile updated successfully.";
-                return RedirectToAction("Dashboard", "Index");
+                return RedirectToAction("Index", "Dashboard");
             }
 
             TempData["Error"] = "Failed to update profile.";
@@ -175,7 +175,7 @@ namespace UMS.Web.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles="Admin")]
+        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateUser(CreateUserViewModel model)
         {
@@ -194,6 +194,8 @@ namespace UMS.Web.Controllers
             TempData["Error"] = $"Failed to create user: {error}";
             return View(model);
         }
+
+
 
 
     }

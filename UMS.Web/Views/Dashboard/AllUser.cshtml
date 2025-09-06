@@ -1,8 +1,15 @@
 ﻿@model IEnumerable<UMS.Web.Models.Dashboard.UserListViewModel>
 
 @{
-    Layout = "_DashboardLayout";  // ✅ Reuse the sidebar layout
+    Layout = "_DashboardLayout";  
     ViewData["Title"] = "Manage Users";
+}
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["Message"]
+    </div>
 }
 
 <h2>Manage Users</h2>

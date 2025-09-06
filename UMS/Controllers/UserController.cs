@@ -47,15 +47,15 @@ namespace UMS.API.Controllers
 
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin,User")]
-        public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserCommand command)
+        public async Task<IActionResult> UpdateUser(Guid id, [FromForm] UpdateUserCommand command)
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var isAdmin = User.IsInRole("Admin");
 
-            if (currentUserId != id && !isAdmin)
+            if (currentUserId != id.ToString() && !isAdmin)
                 return Forbid();
 
-            if (id != command.Id)
+            if (id.ToString() != command.Id.ToString())
                 return BadRequest("ID in URL and body must match");
 
             var success = await _mediator.Send(command);
@@ -77,23 +77,20 @@ namespace UMS.API.Controllers
             return NoContent();
         }
 
-        [HttpPut("user/profile/{id}")]
-        [Authorize]
-        public async Task<IActionResult> UpdateUserProfile(string id, [FromForm] UpdateUserCommand command)
+        [HttpPost("{id}/profile-picture")]
+        public async Task<IActionResult> UploadProfilePicture(Guid id, IFormFile file)
         {
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded");
 
-            if (currentUserId != id)
-                return Forbid();
+            var result = await _mediator.Send(new UploadProfilePictureCommand
+            {
+                UserId = id,
+                File = file,
+                Folder = "profile-pictures"
+            });
 
-            if (id != command.Id)
-                return BadRequest("ID in URL and body must match");
-
-            var success = await _mediator.Send(command);
-            if (!success)
-                return NotFound("User not found");
-
-            return Ok(new { message = "Profile updated successfully" });
+            return Ok(new { imageUrl = result });
         }
     }
 }
