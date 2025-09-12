@@ -30,7 +30,7 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Publish
-        run: dotnet publish -c Release -o ./publish
+        run: dotnet publish ./UMS.Web/UMS.Web.csproj -c Release -o ./publish
 
       - name: Login to Azure
         uses: azure/login@v1
