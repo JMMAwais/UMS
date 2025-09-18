@@ -38,7 +38,7 @@ jobs:
       - name: Deploy MVC to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME_MVC }} # MVC app service name
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }} # MVC app service name
           package: ./publish-mvc
 
   deploy-api:
@@ -70,7 +70,7 @@ jobs:
       - name: Deploy API to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME_API }} # API app service name
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }} # API app service name
           package: ./publish-api
 
       - name: Deploy to Azure Web App
