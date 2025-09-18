@@ -60,6 +60,9 @@ jobs:
       - name: Publish API
         run: dotnet publish ./UMS/UMS.API.csproj -c Release -o ./publish-api
 
+      - name: Check API publish folder
+        run: ls -la ./publish-api
+
       - name: Login to Azure
         uses: azure/login@v1
         with:
