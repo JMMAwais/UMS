@@ -57,10 +57,10 @@ jobs:
         run: dotnet restore
 
       - name: Build API
-        run: dotnet build ./UMS.API/UMS.API.csproj --configuration Release --no-restore
+        run: dotnet build ./UMS/UMS.API.csproj --configuration Release --no-restore
 
       - name: Publish API
-        run: dotnet publish ./UMS.API/UMS.API.csproj -c Release -o ./publish-api
+        run: dotnet publish ./UMS/UMS.API.csproj -c Release -o ./publish-api
 
       - name: Login to Azure
         uses: azure/login@v1
