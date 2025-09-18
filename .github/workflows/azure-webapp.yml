@@ -1,19 +1,17 @@
-name: Build and deploy ASP.NET Core app to Azure Web App
+name: Build and deploy MVC & API to Azure Web Apps
 
 on:
   push:
     branches:
       - master
 
-      
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  build-and-deploy:
+  deploy-mvc:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,16 +24,54 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
+      - name: Build MVC
+        run: dotnet build ./UMS.Web/UMS.Web.csproj --configuration Release --no-restore
 
-      - name: Publish
-        run: dotnet publish ./UMS.Web/UMS.Web.csproj -c Release -o ./publish
+      - name: Publish MVC
+        run: dotnet publish ./UMS.Web/UMS.Web.csproj -c Release -o ./publish-mvc
 
       - name: Login to Azure
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy MVC to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME_MVC }} # MVC app service name
+          package: ./publish-mvc
+
+  deploy-api:
+    runs-on: ubuntu-latest
+    needs: deploy-mvc   # pehle MVC deploy ho, phir API (optional)
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build API
+        run: dotnet build ./UMS.API/UMS.API.csproj --configuration Release --no-restore
+
+      - name: Publish API
+        run: dotnet publish ./UMS.API/UMS.API.csproj -c Release -o ./publish-api
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy API to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME_API }} # API app service name
+          package: ./publish-api
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
