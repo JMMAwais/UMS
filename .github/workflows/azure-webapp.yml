@@ -69,5 +69,4 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME_API }}
-          package: ./publish-api{ secrets.AZURE_WEBAPP_NAME_API }}
-        package: ./publish-api
+          package: ./publish-api
