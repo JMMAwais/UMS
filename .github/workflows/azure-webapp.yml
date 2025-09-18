@@ -42,39 +42,33 @@ jobs:
           package: ./publish-mvc
 
   deploy-api:
-    runs-on: ubuntu-latest
-    needs: deploy-mvc   # pehle MVC deploy ho, phir API (optional)
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  runs-on: ubuntu-latest
+  needs: deploy-mvc
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
 
-      - name: Restore dependencies
-        run: dotnet restore
+    - name: Restore dependencies
+      run: dotnet restore
 
-      - name: Build API
-        run: dotnet build ./UMS/UMS.API.csproj --configuration Release --no-restore
+    - name: Build API
+      run: dotnet build ./UMS/UMS.API.csproj --configuration Release --no-restore
 
-      - name: Publish API
-        run: dotnet publish ./UMS/UMS.API.csproj -c Release -o ./publish-api
+    - name: Publish API
+      run: dotnet publish ./UMS/UMS.API.csproj -c Release -o ./publish-api
 
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy API to Azure Web App
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }} # API app service name
-          package: ./publish-api
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}    # or put plain name here
-          package: ./publish
+    - name: Deploy API to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ secrets.AZURE_WEBAPP_NAME_API }}
+        package: ./publish-api
