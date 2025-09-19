@@ -71,5 +71,5 @@ jobs:
       - name: Deploy API to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME_API }}
           package: ./publish-api
