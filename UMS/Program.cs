@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
 using UMS.API.GlobalAcceptionHandler;
@@ -23,13 +25,17 @@ builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(IApplicationMarker).Assembly);
 });
-builder.Services.AddDbContext<AppDbContext>(options =>
-options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),sqloptions=>
-sqloptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(40),
-            errorNumbersToAdd: null)
-));
+builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+        sqlOptions.ExecutionStrategy(deps => new ExponentialBackoffExecutionStrategy(
+            deps, maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30)));
+    });
+});
+
 builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 {
     options.Password.RequiredLength = 6;
@@ -115,3 +121,50 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+/// <summary>
+/// Custom EF Core execution strategy with exponential backoff
+/// </summary>
+public class ExponentialBackoffExecutionStrategy : ExecutionStrategy
+{
+    private int _currentRetryCount = 0;
+
+    public ExponentialBackoffExecutionStrategy(
+        ExecutionStrategyDependencies dependencies,
+        int maxRetryCount,
+        TimeSpan maxRetryDelay)
+        : base(dependencies, maxRetryCount, maxRetryDelay)
+    {
+    }
+
+  
+    protected override bool ShouldRetryOn(Exception exception)
+    {
+        if (exception is SqlException sqlEx)
+        {
+            // Common transient SQL error codes
+            int[] transientErrors = { 40613, 10928, 10929, 40197, 40501, 4060 };
+
+            foreach (SqlError error in sqlEx.Errors)
+            {
+                if (Array.Exists(transientErrors, e => e == error.Number))
+                {
+                    _currentRetryCount++; 
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Exponential backoff delay calculate 
+    /// </summary>
+    protected override TimeSpan? GetNextDelay(Exception lastException)
+    {
+        // Exponential backoff: 2, 4, 8, 16 sec...
+        var delaySeconds = Math.Min(Math.Pow(2, _currentRetryCount), MaxRetryDelay.TotalSeconds);
+        return TimeSpan.FromSeconds(delaySeconds);
+    }
+}
