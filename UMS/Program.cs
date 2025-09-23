@@ -99,11 +99,11 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 await app.Services.ApplyMigrationsAndSeedAsync();
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+//if (app.Environment.IsDevelopment())
+//{
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+//}
 
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
